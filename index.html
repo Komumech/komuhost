@@ -346,6 +346,7 @@
                 const loader = videoContainer.querySelector('.loading-spinner');
                 let isSeeking = false;
                 let controlsTimeout;
+                let lastTap = 0;
 
                 // --- Play/Pause ---
                 function togglePlay() {
@@ -356,8 +357,17 @@
                     }
                 }
 
+                // On desktop, a single click on the video toggles play.
+                // On mobile, this is handled by the double-tap logic below.
+                if (!('ontouchstart' in window)) {
+                    video.addEventListener('click', togglePlay);
+                }
+
                 playPauseBtn.addEventListener('click', togglePlay);
-                video.addEventListener('click', togglePlay);
+
+                videoContainer.addEventListener('click', () => {
+                    if ('ontouchstart' in window) showControls();
+                });
 
                 video.addEventListener('play', () => {
                     playIcon.style.display = 'none';
@@ -413,8 +423,15 @@
 
                 function seek(e) {
                     const timelineWidth = timelineContainer.clientWidth;
-                    const clickX = e.offsetX;
-                    video.currentTime = (clickX / timelineWidth) * video.duration;
+                    // For touch events, we need to calculate the position relative to the timeline container
+                    const rect = timelineContainer.getBoundingClientRect();
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    let offsetX = clientX - rect.left;
+
+                    // Clamp the value between 0 and the timeline width
+                    offsetX = Math.max(0, Math.min(offsetX, timelineWidth));
+
+                    video.currentTime = (offsetX / timelineWidth) * video.duration;
                 }
 
                 // --- Timeline Dragging for Mouse and Touch ---
@@ -447,6 +464,7 @@
                 function showControls() {
                     clearTimeout(controlsTimeout);
                     controls.style.opacity = '1';
+                    hideControlsAfterDelay();
                 }
 
                 function hideControlsAfterDelay() {
@@ -457,10 +475,24 @@
                     }, 3000); // Hide after 3 seconds
                 }
 
-                videoContainer.addEventListener('mousemove', () => { showControls(); hideControlsAfterDelay(); });
+                videoContainer.addEventListener('mousemove', showControls);
                 videoContainer.addEventListener('mouseleave', () => { if (!video.paused) controls.style.opacity = '0'; });
                 video.addEventListener('pause', showControls);
                 video.addEventListener('play', hideControlsAfterDelay);
+
+                // Double-tap to play/pause on touch devices
+                videoContainer.addEventListener('touchend', (e) => {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    if (tapLength < 300 && tapLength > 0) {
+                        // It's a double tap
+                        e.preventDefault(); // Prevent the single-click handler from firing
+                        togglePlay();
+                    }
+                    lastTap = currentTime;
+                });
+
+
                 controls.addEventListener('click', (e) => e.stopPropagation());
 
                 // --- Loading Spinner Events ---
