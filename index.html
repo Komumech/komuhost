@@ -172,6 +172,10 @@
         height: 60px;
         z-index: 2; /* Above video, below controls */
         display: none; /* Hidden by default */
+        background-color: rgba(40, 40, 40, 0.6); /* Faded dark grey background */
+        border-radius: 50%; /* Make it a circle */
+        padding: 5px; /* Add some padding so the K doesn't touch the edge */
+        box-sizing: border-box; /* Ensure padding is included in the width/height */
     }
     .loading-spinner path {
         fill: none;
