@@ -227,3 +227,29 @@ body {
 .logo {
     height: 50px;
 }
+
+/* --- Responsive Adjustments for Smaller Screens --- */
+@media (max-width: 600px) {
+    .video-controls {
+        padding: 5px; /* Reduce padding on controls */
+        gap: 5px; /* Reduce space between buttons */
+    }
+
+    .control-btn {
+        width: 32px; /* Make buttons smaller */
+        height: 32px;
+    }
+
+    .control-btn svg {
+        width: 20px; /* Make icons smaller */
+        height: 20px;
+    }
+
+    .timeline-container {
+        margin: 0 8px; /* Reduce horizontal margin on timeline */
+    }
+
+    .volume-container:hover .volume-slider {
+        width: 60px; /* Make the volume slider a bit shorter */
+    }
+}
