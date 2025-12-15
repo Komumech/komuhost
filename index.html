@@ -7,20 +7,35 @@
 </head>
 <style>
     .imghost{
-        display: grid;
-        width: 90vw;
-        justify-self: center;
-        position: relative;
-        height: 150vh;
+        display: grid; /* Establishes a grid container */
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Creates a responsive grid with columns that are at least 300px wide */
+        gap: 2rem; /* Adds space between grid items */
+        padding: 2rem; /* Adds padding inside the grid container */
+        max-width: 1200px; /* Sets a maximum width for the content */
+        margin: 0 auto; /* Centers the grid container on the page */
     }
     .image{
-        height: 15rem;
+        width: 100%; /* Makes the media fill the container's width */
+        height: 18rem; /* Sets a fixed height */
+        object-fit: cover; /* Ensures the media covers the area without distortion */
         border-radius: 7px;
-        margin-right: 2rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds a subtle shadow for depth */
+        transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effects */
+    }
+    .image:hover {
+        transform: scale(1.03); /* Slightly enlarges the item on hover */
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Increases the shadow on hover */
+    }
+    body {
+        font-family: sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        color: #333;
     }
 </style>
 <body>
     <div class="container">
+        <h1 style="text-align: center; padding-top: 2rem;">My Hosted Files</h1>
         <div class="imghost">
             <div>
             <img src="img1.jpg" alt="" class="image">
@@ -36,6 +51,9 @@
             
             <div>
             <img src="img1.jpg" alt="" class="image">
+            </div>
+            <div>
+                <video src="vid1.mp4" poster="image.png" class="image"></video>
             </div>
         </div>
     </div>
