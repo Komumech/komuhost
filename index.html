@@ -162,6 +162,34 @@
     .timeline-container:hover .progress-bar::after {
         transform: translateY(-50%) scale(1);
     }
+    /* --- Loading Animation --- */
+    .loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        z-index: 2; /* Above video, below controls */
+        display: none; /* Hidden by default */
+    }
+    .loading-spinner path {
+        fill: none;
+        stroke-width: 6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 150; /* Approximate total length of the path */
+        stroke-dashoffset: 150;
+        animation: draw-k 1.5s ease-in-out infinite;
+    }
+    @keyframes draw-k {
+        50% {
+            stroke-dashoffset: 0;
+        }
+        100% {
+            stroke-dashoffset: -150;
+        }
+    }
     /* Hide icons by default, JS will show the correct one */
     .pause-icon, .volume-muted-icon, .fullscreen-exit-icon {
         display: none;
@@ -209,6 +237,18 @@
             
                 <!-- Player Instance 1 -->
                 <div class="video-container">
+                    <div class="loading-spinner">
+                        <svg viewBox="0 0 50 50">
+                            <defs>
+                                <linearGradient id="k-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#e81ca3" />
+                                    <stop offset="50%" stop-color="#7d59da" />
+                                    <stop offset="100%" stop-color="#00ac9d" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M12 10 V 40 M12 25 L 34 10 M12 25 L 34 40" stroke="url(#k-gradient)"/>
+                        </svg>
+                    </div>
                     <video src="vid1.mp4" poster="image.png" class="image video"></video>
                     <div class="video-controls">
                         <button class="control-btn play-pause-btn" title="Play/Pause">
@@ -238,6 +278,18 @@
                     </div>
                 </div>
                                 <div class="video-container">
+                    <div class="loading-spinner">
+                        <svg viewBox="0 0 50 50">
+                            <defs>
+                                <linearGradient id="k-gradient-2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#e81ca3" />
+                                    <stop offset="50%" stop-color="#7d59da" />
+                                    <stop offset="100%" stop-color="#00ac9d" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M12 10 V 40 M12 25 L 34 10 M12 25 L 34 40" stroke="url(#k-gradient-2)"/>
+                        </svg>
+                    </div>
                     <video src="vid1.mp4" poster="image.png" class="image video"></video>
                     <div class="video-controls">
                         <button class="control-btn play-pause-btn" title="Play/Pause">
@@ -291,7 +343,9 @@
                 const volumeSlider = videoContainer.querySelector('.volume-slider');
                 const timelineContainer = videoContainer.querySelector('.timeline-container');
                 const progressBar = videoContainer.querySelector('.progress-bar');
+                const loader = videoContainer.querySelector('.loading-spinner');
                 let isSeeking = false;
+                let controlsTimeout;
 
                 // --- Play/Pause ---
                 function togglePlay() {
@@ -308,11 +362,13 @@
                 video.addEventListener('play', () => {
                     playIcon.style.display = 'none';
                     pauseIcon.style.display = 'block';
+                    loader.style.display = 'none';
                 });
 
                 video.addEventListener('pause', () => {
                     playIcon.style.display = 'block';
                     pauseIcon.style.display = 'none';
+                    loader.style.display = 'none';
                 });
 
                 // --- Rewind & Fast Forward ---
@@ -361,22 +417,56 @@
                     video.currentTime = (clickX / timelineWidth) * video.duration;
                 }
 
-                timelineContainer.addEventListener('mousedown', (e) => {
+                // --- Timeline Dragging for Mouse and Touch ---
+                function startSeeking(e) {
                     isSeeking = true;
-                    seek(e);
-                });
+                    seek(e.type.includes('touch') ? e.touches[0] : e);
+                }
 
-                timelineContainer.addEventListener('mousemove', (e) => {
-                    if (isSeeking) seek(e);
-                });
+                function whileSeeking(e) {
+                    if (isSeeking) {
+                        // Prevent page scroll on mobile while seeking
+                        e.preventDefault();
+                        seek(e.type.includes('touch') ? e.touches[0] : e);
+                    }
+                }
 
-                document.addEventListener('mouseup', () => isSeeking = false);
+                function stopSeeking() {
+                    isSeeking = false;
+                }
+
+                timelineContainer.addEventListener('mousedown', startSeeking);
+                videoContainer.addEventListener('mousemove', whileSeeking);
+                document.addEventListener('mouseup', stopSeeking);
+
+                timelineContainer.addEventListener('touchstart', startSeeking);
+                videoContainer.addEventListener('touchmove', whileSeeking);
+                document.addEventListener('touchend', stopSeeking);
 
                 // --- Show/Hide Controls ---
-                video.addEventListener('play', () => controls.style.opacity = '0');
-                video.addEventListener('pause', () => controls.style.opacity = '1');
-                controls.addEventListener('mouseenter', () => controls.style.opacity = '1');
+                function showControls() {
+                    clearTimeout(controlsTimeout);
+                    controls.style.opacity = '1';
+                }
+
+                function hideControlsAfterDelay() {
+                    if (video.paused) return; // Don't hide if paused
+                    clearTimeout(controlsTimeout);
+                    controlsTimeout = setTimeout(() => {
+                        controls.style.opacity = '0';
+                    }, 3000); // Hide after 3 seconds
+                }
+
+                videoContainer.addEventListener('mousemove', () => { showControls(); hideControlsAfterDelay(); });
+                videoContainer.addEventListener('mouseleave', () => { if (!video.paused) controls.style.opacity = '0'; });
+                video.addEventListener('pause', showControls);
+                video.addEventListener('play', hideControlsAfterDelay);
                 controls.addEventListener('click', (e) => e.stopPropagation());
+
+                // --- Loading Spinner Events ---
+                video.addEventListener('waiting', () => loader.style.display = 'block');
+                video.addEventListener('playing', () => loader.style.display = 'none');
+
             });
         });
     </script>
