@@ -129,7 +129,7 @@ body {
     transition: height 0.2s ease;
 }
 .timeline-container:hover {
-    height: 8px; /* Make bar thicker on hover */
+    height: 10px; /* Make bar thicker on hover */
 }
 .progress-bar {
     height: 100%;
@@ -142,11 +142,11 @@ body {
 .progress-bar::after { /* Seek-indicator thumb */
     content: '';
     position: absolute;
-    right: -6px;
+    right: -7px; /* Adjust position to match new height */
     top: 50%;
     transform: translateY(-50%) scale(0);
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     background-color: white;
     border-radius: 50%;
     transition: transform 0.2s ease;
