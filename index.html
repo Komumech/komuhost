@@ -190,6 +190,26 @@
             stroke-dashoffset: -150;
         }
     }
+    /* --- Play/Pause Overlay Icon --- */
+    .play-pause-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2; /* Above video, below controls */
+        pointer-events: none; /* Allow clicks to pass through to the video */
+        opacity: 0; /* Hidden by default */
+        transition: opacity 0.3s ease; /* Smooth fade */
+        display: flex; /* To center the SVG within it */
+        align-items: center;
+        justify-content: center;
+    }
+    .play-pause-overlay svg {
+        width: 80px; /* Large size */
+        height: 80px;
+        fill: rgba(255, 255, 255, 0.8); /* White, semi-transparent */
+    }
+    .overlay-pause-icon { display: none; } /* Initially show play icon */
     /* Hide icons by default, JS will show the correct one */
     .pause-icon, .volume-muted-icon, .fullscreen-exit-icon {
         display: none;
@@ -249,6 +269,10 @@
                             <path d="M12 10 V 40 M12 25 L 34 10 M12 25 L 34 40" stroke="url(#k-gradient)"/>
                         </svg>
                     </div>
+                    <div class="play-pause-overlay">
+                        <svg class="overlay-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg class="overlay-pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </div>
                     <video src="vid1.mp4" poster="image.png" class="image video"></video>
                     <div class="video-controls">
                         <button class="control-btn play-pause-btn" title="Play/Pause">
@@ -289,6 +313,10 @@
                             </defs>
                             <path d="M12 10 V 40 M12 25 L 34 10 M12 25 L 34 40" stroke="url(#k-gradient-2)"/>
                         </svg>
+                    </div>
+                    <div class="play-pause-overlay">
+                        <svg class="overlay-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg class="overlay-pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </div>
                     <video src="vid1.mp4" poster="image.png" class="image video"></video>
                     <div class="video-controls">
@@ -344,9 +372,13 @@
                 const timelineContainer = videoContainer.querySelector('.timeline-container');
                 const progressBar = videoContainer.querySelector('.progress-bar');
                 const loader = videoContainer.querySelector('.loading-spinner');
+                const playPauseOverlay = videoContainer.querySelector('.play-pause-overlay');
+                const overlayPlayIcon = videoContainer.querySelector('.overlay-play-icon');
+                const overlayPauseIcon = videoContainer.querySelector('.overlay-pause-icon');
                 let isSeeking = false;
                 let controlsTimeout;
                 let lastTap = 0;
+                let loadingTimeout;
 
                 // --- Play/Pause ---
                 function togglePlay() {
@@ -354,6 +386,7 @@
                         video.play();
                     } else {
                         video.pause();
+                        showOverlayIcon('pause');
                     }
                 }
 
@@ -372,12 +405,14 @@
                 video.addEventListener('play', () => {
                     playIcon.style.display = 'none';
                     pauseIcon.style.display = 'block';
+                    showOverlayIcon('play');
                     loader.style.display = 'none';
                 });
 
                 video.addEventListener('pause', () => {
                     playIcon.style.display = 'block';
                     pauseIcon.style.display = 'none';
+                    showOverlayIcon('pause');
                     loader.style.display = 'none';
                 });
 
@@ -453,11 +488,11 @@
                 }
 
                 timelineContainer.addEventListener('mousedown', startSeeking);
-                videoContainer.addEventListener('mousemove', whileSeeking);
+                document.addEventListener('mousemove', whileSeeking);
                 document.addEventListener('mouseup', stopSeeking);
 
                 timelineContainer.addEventListener('touchstart', startSeeking);
-                videoContainer.addEventListener('touchmove', whileSeeking);
+                document.addEventListener('touchmove', whileSeeking, { passive: false });
                 document.addEventListener('touchend', stopSeeking);
 
                 // --- Show/Hide Controls ---
@@ -496,8 +531,33 @@
                 controls.addEventListener('click', (e) => e.stopPropagation());
 
                 // --- Loading Spinner Events ---
-                video.addEventListener('waiting', () => loader.style.display = 'block');
-                video.addEventListener('playing', () => loader.style.display = 'none');
+                video.addEventListener('waiting', () => {
+                    // Only show the loader if buffering takes more than 2 seconds
+                    clearTimeout(loadingTimeout);
+                    loadingTimeout = setTimeout(() => {
+                        loader.style.display = 'block';
+                    }, 2000);
+                });
+                video.addEventListener('playing', () => {
+                    // Hide loader and clear timer when playback resumes
+                    clearTimeout(loadingTimeout);
+                    loader.style.display = 'none';
+                });
+
+                // --- Play/Pause Overlay Icon Logic ---
+                function showOverlayIcon(type) {
+                    overlayPlayIcon.style.display = (type === 'play') ? 'block' : 'none';
+                    overlayPauseIcon.style.display = (type === 'pause') ? 'block' : 'none';
+                    playPauseOverlay.style.opacity = '1';
+
+                    // Fade out after a short delay
+                    clearTimeout(playPauseOverlay.fadeTimeout);
+                    playPauseOverlay.fadeTimeout = setTimeout(() => {
+                        playPauseOverlay.style.opacity = '0';
+                    }, 700); // Icon visible for 0.7 seconds
+                }
+                // Hide overlay initially
+                playPauseOverlay.style.opacity = '0';
 
             });
         });
