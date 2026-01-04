@@ -207,4 +207,105 @@ document.addEventListener('DOMContentLoaded', () => {
         playPauseOverlay.style.opacity = '0';
 
     });
+
+    // --- Drag and Drop Image Hosting Logic ---
+    const imgHost = document.querySelector('.imghost');
+
+    // Load previously saved images from LocalStorage
+    const savedImages = JSON.parse(localStorage.getItem('komu_hosted_images')) || [];
+    if (imgHost) {
+        savedImages.forEach(src => displayImage(src));
+    }
+
+    // Enable drag and drop on the whole page
+    document.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Necessary to allow dropping
+    });
+
+    document.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFiles(files);
+        }
+    });
+
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                uploadImage(file);
+            }
+        });
+    }
+
+    function uploadImage(file) {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        // ⚠️ GET A FREE KEY AT https://api.imgbb.com/ AND PASTE IT BELOW
+        const apiKey = 'YOUR_IMGBB_API_KEY_HERE'; 
+
+        if (apiKey === 'YOUR_IMGBB_API_KEY_HERE') {
+            alert('Please add your ImgBB API Key in script.js line 243 to enable hosting.');
+            return;
+        }
+
+        // Show simple loading state
+        const loadingMsg = document.createElement('div');
+        loadingMsg.textContent = 'Uploading...';
+        loadingMsg.style.color = '#fff';
+        loadingMsg.style.textAlign = 'center';
+        imgHost.appendChild(loadingMsg);
+
+        fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            imgHost.removeChild(loadingMsg);
+            if (data.success) {
+                const url = data.data.url;
+                displayImage(url);
+                saveImage(url);
+            } else {
+                alert('Upload failed: ' + (data.error ? data.error.message : 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            imgHost.removeChild(loadingMsg);
+            console.error('Error:', error);
+            alert('Upload failed.');
+        });
+    }
+
+    function displayImage(src) {
+        if (!imgHost) return;
+        const div = document.createElement('div');
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'image';
+        
+        // Make image clickable to copy URL
+        img.style.cursor = 'pointer';
+        img.title = 'Click to copy hosted URL';
+        img.addEventListener('click', () => {
+            navigator.clipboard.writeText(src).then(() => {
+                alert('URL copied: ' + src);
+            });
+        });
+
+        div.appendChild(img);
+        imgHost.appendChild(div);
+    }
+
+    function saveImage(src) {
+        try {
+            const images = JSON.parse(localStorage.getItem('komu_hosted_images')) || [];
+            images.push(src);
+            localStorage.setItem('komu_hosted_images', JSON.stringify(images));
+        } catch (e) {
+            console.error('Storage full, could not save image.', e);
+        }
+    }
 });
